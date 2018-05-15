@@ -2,7 +2,7 @@ library(rtweet)
 library(tidyverse)
 
 load("twitter_token.rda")
-st <- stream_tweets(token = twitter_token, timeout = 100)
+st <- stream_tweets(token = twitter_token, timeout = 10)
 print(nrow(st))
 head(st)
 str(st)
