@@ -39,3 +39,4 @@ rsconnect/
 credentials.py
 twitter_token.rda
 make_token.R
+gather-data/twitter_log.txt

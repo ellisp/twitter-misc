@@ -1,3 +1,8 @@
+setwd("/home/ellisp/twitter-misc")
+
+# pause for between 0 and 30 minutes, so the time of gathering is random
+Sys.sleep(runif(1, 0, 30 *60))
+
 library(rtweet)
 library(tidyverse)
 library(RPostgres)
@@ -22,7 +27,7 @@ dbSendQuery(con, sql)
 
 load("twitter_token.rda")
 
-collection_seconds <- 10
+collection_seconds <- 30
 
 
 update_batch("collection_seconds", collection_seconds)
@@ -35,7 +40,7 @@ systm <- function(){  substring(Sys.time(),1,19)}
 
 update_batch("time_collection_started", systm(), TRUE)
 
-st <- stream_tweets(token = twitter_token, timeout = collection_seconds)
+st <- stream_tweets(token = twitter_token, timeout = collection_seconds, verbose = FALSE)
 
 update_batch("time_collection_finished", systm(), TRUE)
 
