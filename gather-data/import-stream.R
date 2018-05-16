@@ -2,8 +2,44 @@ library(rtweet)
 library(tidyverse)
 library(RPostgres)
 
+update_batch <- function(field, value, isstring = FALSE){
+  if(isstring){
+    value <- paste0("'", value, "'")
+  }
+  sql <- paste0("update tweets.batches  set ", field, " = ", value,
+                " where batch_id = ", batch_id)
+  print(sql)
+  dbSendQuery(con, sql)
+}
+
+con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
+
+batch_id <- dbGetQuery(con, "select max(batch_id) as x from tweets.batches")$x + 1
+if(is.na(batch_id)){batch_id <- 1}
+
+sql <- paste("insert into tweets.batches(batch_id) select", batch_id, " AS batch_id")
+dbSendQuery(con, sql)
+
 load("twitter_token.rda")
-st <- stream_tweets(token = twitter_token, timeout = 30)
+
+collection_seconds <- 10
+
+
+update_batch("collection_seconds", collection_seconds)
+
+batch <- data_frame(batch_id = batch_id,
+                    collection_seconds = collection_seconds,
+                    time_collection_started = Sys.time())
+
+systm <- function(){  substring(Sys.time(),1,19)}
+
+update_batch("time_collection_started", systm(), TRUE)
+
+st <- stream_tweets(token = twitter_token, timeout = collection_seconds)
+
+update_batch("time_collection_finished", systm(), TRUE)
+
+update_batch("tweets_downloaded", nrow(st))
 
 # caution the 0.6.0 version of rtweet on CRAN imports quite a bit less information than does the  0.6.3 on GitHub
 
@@ -31,14 +67,16 @@ st <- stream_tweets(token = twitter_token, timeout = 30)
 #   retweet and quote details
 #   tweet locations
 
+# TODO - add a batch number to tweets, and a table in the DB that tracks 
+# batches.  This can be used as a PSU, and mean the DATETIME only needs
+# to be in the batch table and an INT in tweets.tweets.  would have start
+# time, finish time, batch number.  Would add  a row to that table
+# at the beginning of this script, and update it once the ETL is finished.
+# This script should, as its last step, call psql to run the ETL SQL script.
 
-# TODO - first pull the existing sources down, and remove dupes from the below
-# and make sure using the same src_id code
-con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
-# for some reason don't have permission to tweets.sources
 current_sources <- dbGetQuery(con, "select * from tweets.sources")
-sourcen <- max(current_sources$src_id) + 1
+sourcen <- ifelse(nrow(current_sources) == 0 , 1, max(current_sources$src_id) + 1)
 
 
 sources <- data_frame(src_name = unique(st$source)) %>%
@@ -48,6 +86,7 @@ new_sources <- sources %>%
   filter(is.na(src_id)) 
 
 new_sources$src_id <- sourcen:(nrow(new_sources) - 1 + sourcen)
+new_sources$batch_id <- batch_id
 
 all_sources <- rbind(current_sources, new_sources)
 rm(sources)
@@ -91,71 +130,68 @@ tweeters_slow <- st %>%
   select(user_id, name, location, description, url, protected,
          verified,
          profile_url, profile_expanded_url, account_lang,
-         profile_banner_url, profile_background_url, profile_image_url, created_at) %>%
-  rename(observed_at = created_at) %>%
+         profile_banner_url, profile_background_url, profile_image_url) %>%
   distinct() %>%
-  gather(characteristic, value, -user_id, -observed_at)
+  gather(characteristic, value, -user_id) %>%
+  filter(!is.na(value)) %>%
+  mutate(batch_first_observed = batch_id)
 
 tweeters_counts <- st %>%
-  select(user_id, followers_count, friends_count, statuses_count, favourites_count, created_at) %>%
-  rename(observed_at = created_at) %>%
+  select(user_id, followers_count, friends_count, statuses_count, favourites_count) %>%
   distinct() 
 
 quoted_counts <- st %>%
   filter(is_quote) %>%
   select(quoted_user_id, quoted_followers_count, quoted_friends_count, quoted_statuses_count, 
-         quoted_favorite_count, created_at) %>%
+         quoted_favorite_count) %>%
   rename(
     user_id = quoted_user_id,
     followers_count = quoted_followers_count,
     friends_count = quoted_friends_count,
     favourites_count = quoted_favorite_count,
-    statuses_count = quoted_statuses_count,
-    observed_at = created_at)
+    statuses_count = quoted_statuses_count)
 
 retweet_counts <- st %>%
   filter(is_retweet) %>%
   select(retweet_user_id, retweet_followers_count, retweet_friends_count, retweet_statuses_count, 
-         retweet_favorite_count, created_at) %>%
+         retweet_favorite_count) %>%
   rename(
     user_id = retweet_user_id,
     followers_count = retweet_followers_count,
     favourites_count = retweet_favorite_count,
     friends_count = retweet_friends_count,
-    statuses_count = retweet_statuses_count,
-    observed_at = created_at)
+    statuses_count = retweet_statuses_count)
 
 
 users1 <- st %>%
-  select(user_id, screen_name, account_created_at, created_at) %>%
-  rename(observed_at = created_at) %>%
+  select(user_id, screen_name, account_created_at) %>%
   distinct(user_id, screen_name, .keep_all = TRUE)
 
 users2 <- st %>%
   filter(is_quote) %>%
-  select(quoted_user_id, quoted_screen_name, created_at) %>%
+  select(quoted_user_id, quoted_screen_name) %>%
   rename(user_id = quoted_user_id,
-         screen_name = quoted_screen_name,
-         observed_at = created_at) %>%
+         screen_name = quoted_screen_name) %>%
   mutate(account_created_at = NA) %>%
   filter(!user_id %in% users1$user_id) %>%
   distinct(user_id, screen_name, .keep_all = TRUE)
 
 users3 <- st %>%
   filter(is_retweet) %>%
-  select(retweet_user_id, retweet_screen_name, created_at) %>%
+  select(retweet_user_id, retweet_screen_name) %>%
   rename(user_id = retweet_user_id,
-         screen_name = retweet_screen_name,
-         observed_at = created_at) %>%
+         screen_name = retweet_screen_name) %>%
   mutate(account_created_at = NA) %>%
   filter(!user_id %in% c(users1$user_id, users2$user_id)) %>%
   distinct(user_id, screen_name, .keep_all = TRUE)
 
 
-users <- rbind(users1, users2, users3)
+users <- rbind(users1, users2, users3) %>%
+  mutate_("batch_id" = batch_id)
 
 users_counts <- rbind(tweeters_counts, retweet_counts, quoted_counts) %>%
-  distinct(user_id, observed_at, .keep_all = TRUE)
+  distinct(user_id, observed_at, .keep_all = TRUE) %>%
+  mutate_("batch_id" = batch_id)
 
 retweeted <- st %>%
   filter(is_retweet) %>% 
@@ -173,11 +209,41 @@ replies <- st %>%
 
 
 dbWriteTable(con, "sources", new_sources, row.names = FALSE, overwrite= TRUE)
+update_batch("new_sources_loaded", nrow(new_sources))
+
 dbWriteTable(con, "users", users, row.names = FALSE, overwrite = TRUE)
+
 dbWriteTable(con, "users_counts", users_counts, row.names = FALSE, overwrite = TRUE)
+update_batch("users_followers_counted", nrow(users_counts))
+
+dbWriteTable(con, "users_characteristics", tweeters_slow, row.names = FALSE, overwrite = TRUE)
+
 dbWriteTable(con, "retweeted", retweeted, row.names = FALSE, overwrite= TRUE)
+update_batch("retweets_loaded", nrow(retweeted))
+
 dbWriteTable(con, "quoted", quoted, row.names = FALSE, overwrite= TRUE)
+update_batch("quotes_loaded", nrow(quoted))
+
+
 dbWriteTable(con, "tweets", tweets, row.names = FALSE, overwrite= TRUE)
+update_batch("tweets_loaded", nrow(tweets))
+
+
 dbWriteTable(con, "mentions", mentions, row.names = FALSE, overwrite= TRUE)
+update_batch("mentions_loaded", nrow(mentions))
+
+
 dbWriteTable(con, "hashtags", hashtags, row.names = FALSE, overwrite= TRUE)
+update_batch("hashtags_loaded", nrow(hashtags))
+
+
 dbWriteTable(con, "replies", replies, row.names = FALSE, overwrite= TRUE)
+update_batch("replies_loaded", nrow(replies))
+
+# run the SQL ETL here.  Need a way to stop if an error occurs
+system("psql -d twitter --file=gather-data/etl.sql")
+
+update_batch("time_load_completed", systm(), TRUE)
+update_batch("load_succeeded", TRUE)
+
+dbDisconnect(con)

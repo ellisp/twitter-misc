@@ -1,4 +1,4 @@
-﻿/*
+/*
 This script is for moving the data in tables in the public schema, where they have been dumped by R, to the tweets schema
 
 */
@@ -17,8 +17,8 @@ FROM public.sources;
 ----------------------------Users------------------------------
 -- will first need to reduce public.users to just those rows not already in there
 -- (or create a temporary table that does it, probably easier than DELETE)
-DROP TABLE IF EXISTS public.users2;
-DROP TABLE IF EXISTS public.users3;
+--DROP TABLE IF EXISTS public.users2;
+--DROP TABLE IF EXISTS public.users3;
 
 SELECT 
     CAST(user_id AS BIGINT) AS user_id,
@@ -47,8 +47,6 @@ UPDATE tweets.batches
 SET new_users_loaded = (SELECT COUNT(1) FROM public.users3)
 WHERE batch_id = (SELECT batch_id FROM public.users LIMIT 1);
 
-DROP TABLE public.users2;
-DROP TABLE public.users3;
 
 INSERT INTO tweets.users_counts(user_id, followers_count, friends_count, statuses_count, favourites_count, batch_id)
 SELECT
@@ -63,12 +61,17 @@ FROM public.users_counts;
 
 INSERT INTO tweets.users_characteristics(user_id, characteristic, value, batch_first_observed)
 SELECT
-    CAST(user_id AS BIGINT),
-    characteristic,
-    value,
-    batch_first_observed
-FROM public.users_characteristics;
+    CAST(a.user_id AS BIGINT),
+    a.characteristic,
+    a.value,
+    a.batch_first_observed
+FROM public.users_characteristics AS a
+INNER JOIN public.users3 AS b
+ON CAST(a.user_id AS BIGINT) = b.user_id;
 
+
+DROP TABLE public.users2;
+DROP TABLE public.users3;
 
 -----------------------Tweets-------------------------
 INSERT INTO tweets.tweets(
@@ -139,7 +142,7 @@ SELECT
     CAST(reply_to_user_id AS BIGINT)
 FROM public.replies;
 
-
+/*
 DROP TABLE public.sources;
 DROP TABLE public.users;
 DROP TABLE public.users_counts;
@@ -150,5 +153,5 @@ DROP TABLE public.tweets;
 DROP TABLE public.mentions;
 DROP TABLE public.hashtags;
 DROP TABLE public.replies;
-
+*/
 

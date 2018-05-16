@@ -1,4 +1,4 @@
-﻿
+/*
 --Don't uncomment and run this script! it drops all the tables in the database, and with them, all their data.,
 DROP TABLE IF EXISTS tweets.hashtags;
 DROP TABLE IF EXISTS tweets.mentions;
@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS tweets.users_counts;
 DROP TABLE IF EXISTS tweets.users_characteristics;
 DROP TABLE IF EXISTS tweets.users;
 DROP TABLE IF EXISTS tweets.batches;
-
+*/
 
 CREATE TABLE tweets.batches(
     batch_id                    INT PRIMARY KEY,
@@ -81,7 +81,7 @@ CREATE TABLE tweets.tweets(
     src_id              INT NOT NULL REFERENCES tweets.sources,
     batch_id            INT NOT NULL REFERENCES tweets.batches  
 );
-
+CREATE INDEX tweeeter ON tweets.tweets(user_id);
 
 
 CREATE TABLE tweets.hashtags(
