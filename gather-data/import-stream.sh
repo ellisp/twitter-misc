@@ -1,3 +1,4 @@
 #!/bin/bash
-cd ~/twitter-misc/gather-data/
-Rscript import-stream.R > twitter_log.txt
+# don't forget to do chmod -x import-stream.sh
+cd ~/twitter-misc/
+Rscript gather-data/import-stream.R > gather-data/twitter_log.txt

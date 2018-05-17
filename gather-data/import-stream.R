@@ -1,4 +1,4 @@
-setwd("/home/ellisp/twitter-misc")
+
 
 # pause for between 0 and 30 minutes, so the time of gathering is random
 Sys.sleep(runif(1, 0, 30 *60))
@@ -72,13 +72,6 @@ update_batch("tweets_downloaded", nrow(st))
 #   retweet and quote details
 #   tweet locations
 
-# TODO - add a batch number to tweets, and a table in the DB that tracks 
-# batches.  This can be used as a PSU, and mean the DATETIME only needs
-# to be in the batch table and an INT in tweets.tweets.  would have start
-# time, finish time, batch number.  Would add  a row to that table
-# at the beginning of this script, and update it once the ETL is finished.
-# This script should, as its last step, call psql to run the ETL SQL script.
-
 
 current_sources <- dbGetQuery(con, "select * from tweets.sources")
 sourcen <- ifelse(nrow(current_sources) == 0 , 1, max(current_sources$src_id) + 1)
@@ -104,6 +97,17 @@ tweets <- st %>%
   mutate(is_reply = !is.na(reply_to_status_id)) %>%
   left_join(all_sources, by = c("source" = "src_name")) %>%
   select(-source, -reply_to_status_id) 
+
+tweets_rare_characteristics <- st %>%
+  select(status_id, urls_url:ext_media_type, place_url:bbox_coords) %>%
+  gather(field, value, -status_id) %>%
+  filter(!is.na(value)) %>%
+  group_by(status_id, field) %>%
+  mutate(value = paste(unlist(lapply(value, c)), collapse="|||")) %>%
+  separate(value, sep = "\\|\\|\\|", into = as.character(1:50), fill = "right") %>%
+  gather(value_sequence, value, -status_id, -field) %>%
+  mutate(value_sequence = as.integer(value_sequence)) %>%
+  filter(!is.na(value) & value != "NA")
 
 mentions <- st %>%
   select(status_id, mentions_user_id) %>%
@@ -232,6 +236,9 @@ update_batch("quotes_loaded", nrow(quoted))
 
 dbWriteTable(con, "tweets", tweets, row.names = FALSE, overwrite= TRUE)
 update_batch("tweets_loaded", nrow(tweets))
+
+dbWriteTable(con, "tweets_rare_characteristics", tweets_rare_characteristics,
+             row.names = FALSE, overwrite = TRUE)
 
 
 dbWriteTable(con, "mentions", mentions, row.names = FALSE, overwrite= TRUE)
