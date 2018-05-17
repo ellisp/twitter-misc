@@ -21,7 +21,7 @@ shinyUI(fluidPage(
     
     # Show a plot of the generated distribution
     mainPanel(
-       plotOutput("wcp")
+       plotOutput("wcp", height = "600px")
     )
   )
 ))

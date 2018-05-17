@@ -1,5 +1,6 @@
 library(tidyverse)
 library(RPostgres)
+library(rsconnect)
 
 con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
@@ -34,3 +35,6 @@ top_ten_lang <- hashtags %>%
 top_ten_lang <- top_ten_lang$lang[1:10]
 save(top_ten_lang, file = "twitter-cloud/top_ten_lang.rda")
 
+
+
+deployApp("twitter-cloud", appName = "twitter-test1")
