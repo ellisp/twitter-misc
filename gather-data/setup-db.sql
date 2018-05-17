@@ -1,17 +1,18 @@
-/*
+
 --Don't uncomment and run this script! it drops all the tables in the database, and with them, all their data.,
 DROP TABLE IF EXISTS tweets.hashtags;
 DROP TABLE IF EXISTS tweets.mentions;
 DROP TABLE IF EXISTS tweets.retweeted;
 DROP TABLE IF EXISTS tweets.replies;
 DROP TABLE IF EXISTS tweets.quoted;
+drop table if exists tweets.tweets_rare_characteristics;
 DROP TABLE IF EXISTS tweets.tweets;
 DROP TABLE IF EXISTS tweets.sources;
 DROP TABLE IF EXISTS tweets.users_counts;
 DROP TABLE IF EXISTS tweets.users_characteristics;
 DROP TABLE IF EXISTS tweets.users;
 DROP TABLE IF EXISTS tweets.batches;
-*/
+
 
 CREATE TABLE tweets.batches(
     batch_id                    INT PRIMARY KEY,
@@ -81,7 +82,15 @@ CREATE TABLE tweets.tweets(
     src_id              INT NOT NULL REFERENCES tweets.sources,
     batch_id            INT NOT NULL REFERENCES tweets.batches  
 );
-CREATE INDEX tweeeter ON tweets.tweets(user_id);
+CREATE INDEX tweeter ON tweets.tweets(user_id);
+
+CREATE TABLE tweets.tweets_rare_characteristics(
+	status_id			BIGINT NOT null references tweets.tweets,
+	field				TEXT NOT NULL,
+	value_sequence		INT NOT NULL,
+	value				TEXT NOT NULL
+);
+ALTER TABLE tweets.tweets_rare_characteristics ADD PRIMARY KEY (status_id, field, value_sequence);
 
 
 CREATE TABLE tweets.hashtags(

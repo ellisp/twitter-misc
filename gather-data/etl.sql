@@ -103,6 +103,15 @@ SELECT
 FROM public.tweets;
 
 
+INSERT INTO tweets.tweets_rare_characteristics(status_id, field, value_sequence, value)
+SELECT
+	CAST(status_id AS BIGINT),
+	field,
+	value_sequence,
+	VALUE
+FROM public.tweets_rare_characteristics;
+
+
 ---------------------------Mentions and hashtags------------------------
 INSERT INTO tweets.mentions(status_id, mentioned_user_id)
 SELECT
@@ -142,7 +151,7 @@ SELECT
     CAST(reply_to_user_id AS BIGINT)
 FROM public.replies;
 
-/*
+
 DROP TABLE public.sources;
 DROP TABLE public.users;
 DROP TABLE public.users_counts;
@@ -153,5 +162,5 @@ DROP TABLE public.tweets;
 DROP TABLE public.mentions;
 DROP TABLE public.hashtags;
 DROP TABLE public.replies;
-*/
+DROP TABLE public.tweets_rare_characteristics;
 
