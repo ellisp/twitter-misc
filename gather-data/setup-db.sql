@@ -1,6 +1,7 @@
 
 --Don't uncomment and run this script! it drops all the tables in the database, and with them, all their data.,
-DROP TABLE IF EXISTS tweets.hashtags;
+/*
+ * DROP TABLE IF EXISTS tweets.hashtags;
 DROP TABLE IF EXISTS tweets.mentions;
 DROP TABLE IF EXISTS tweets.retweeted;
 DROP TABLE IF EXISTS tweets.replies;
@@ -12,7 +13,7 @@ DROP TABLE IF EXISTS tweets.users_counts;
 DROP TABLE IF EXISTS tweets.users_characteristics;
 DROP TABLE IF EXISTS tweets.users;
 DROP TABLE IF EXISTS tweets.batches;
-
+*/
 
 CREATE TABLE tweets.batches(
     batch_id                    INT PRIMARY KEY,
@@ -99,7 +100,7 @@ CREATE TABLE tweets.hashtags(
   hashtag           TEXT NOT NULL
 );
 ALTER TABLE tweets.hashtags ADD PRIMARY KEY (status_id, hashtag_sequence);
-
+CREATE INDEX idx_hash ON tweets.hashtags (hashtag, status_id);
 
 CREATE TABLE tweets.mentions(
     status_id           BIGINT REFERENCES tweets.tweets,
