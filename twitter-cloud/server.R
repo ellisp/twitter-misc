@@ -1,6 +1,5 @@
 library(shiny)
 library(dplyr)
-library(shiny)
 library(wordcloud)
 
 load("hashtags.rda")
@@ -14,10 +13,13 @@ shinyServer(function(input, output) {
       hashtags %>%
         filter(lang %in% input$langs) %>%
         group_by(hashtag) %>%
-        summarise(freq = sum(freq))
+        summarise(freq = sum(freq)) %>%
+        arrange(desc(freq)) %>%
+        slice(1:40)
     })  
     
     output$wcp <- renderPlot({
+      par(mai=c(0,0,0,0))
       wordcloud(the_data()$hashtag,
                 the_data()$freq)
     
