@@ -1,6 +1,7 @@
 library(shiny)
 library(dplyr)
 library(wordcloud)
+library(viridis)
 
 load("hashtags.rda")
 
@@ -19,9 +20,12 @@ shinyServer(function(input, output) {
     })  
     
     output$wcp <- renderPlot({
-      par(mai=c(0,0,0,0))
+      par(mai=c(0,0,0,0), bg = "grey50")
       wordcloud(the_data()$hashtag,
-                the_data()$freq)
+                the_data()$freq,
+                random.order = FALSE,
+                ordered.colors = TRUE,
+                colors = inferno(40, direction = -1))
     
   })
   
