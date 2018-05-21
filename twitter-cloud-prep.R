@@ -4,7 +4,7 @@ library(rsconnect)
 
 con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
-# dbGetQuery(con, "select * from tweets.batches order by batch_id") %>% View
+dbGetQuery(con, "select * from tweets.batches order by batch_id") %>% View
 
 
 sql <-"
