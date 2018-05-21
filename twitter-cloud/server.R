@@ -2,6 +2,7 @@ library(shiny)
 library(dplyr)
 library(wordcloud)
 library(RPostgres)
+library(viridis)
 
 con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
@@ -22,7 +23,6 @@ hashtags <- dbGetQuery(con, sql, stringsAsFactors = FALSE) %>%
   as_tibble() %>%
   mutate(lang = str_trim(lang))
 
-
 shinyServer(function(input, output) {
   
   
@@ -37,9 +37,12 @@ shinyServer(function(input, output) {
     })  
     
     output$wcp <- renderPlot({
-      par(mai=c(0,0,0,0))
+      par(mai=c(0,0,0,0), bg = "grey50")
       wordcloud(the_data()$hashtag,
-                the_data()$freq)
+                the_data()$freq,
+                random.order = FALSE,
+                ordered.colors = TRUE,
+                colors = inferno(40, direction = -1))
     
   })
   
