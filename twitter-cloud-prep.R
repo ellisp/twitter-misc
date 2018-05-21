@@ -37,4 +37,4 @@ save(top_ten_lang, file = "twitter-cloud/top_ten_lang.rda")
 
 
 
-deployApp("twitter-cloud", appName = "twitter-test1")
+# deployApp("twitter-cloud", appName = "twitter-test1")

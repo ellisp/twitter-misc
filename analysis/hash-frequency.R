@@ -46,6 +46,19 @@ LIMIT 20"
 
 dbGetQuery(con, sql)
 
+sql <-"
+SELECT
+  t.text,
+  u.screen_name
+FROM tweets.tweets AS t
+JOIN tweets.users AS u
+ON t.user_id = u.user_id
+JOIN tweets.hashtags AS h
+ON t.status_id = h.status_id
+WHERE h.hashtag = 'iVoteBTSBBMAs'
+LIMIT 20
+"
+dbGetQuery(con, sql)
 
 
 # Top 10 mentions

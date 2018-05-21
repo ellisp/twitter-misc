@@ -1,10 +1,28 @@
 library(shiny)
 library(dplyr)
 library(wordcloud)
+library(RPostgres)
 
-load("hashtags.rda")
+con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
-# Define server logic required to draw a histogram
+sql <-"
+SELECT 
+  hashtag,
+  COUNT(a.status_id) AS freq,
+  lang
+FROM
+  tweets.hashtags AS a
+JOIN
+  tweets.tweets AS b
+ON a.status_id = b.status_id
+GROUP BY lang, hashtag
+ORDER BY freq DESC"
+
+hashtags <- dbGetQuery(con, sql, stringsAsFactors = FALSE) %>%
+  as_tibble() %>%
+  mutate(lang = str_trim(lang))
+
+
 shinyServer(function(input, output) {
   
   
