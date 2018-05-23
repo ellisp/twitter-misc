@@ -19,25 +19,35 @@ FROM
 JOIN
   tweets.tweets AS b
 ON a.status_id = b.status_id
+WHERE date_trunc('day', b.created_at) = 'the_date'
 GROUP BY lang, hashtag
 ORDER BY freq DESC"
 
-hashtags <- dbGetQuery(con, sql, stringsAsFactors = FALSE) %>%
-  as_tibble() %>%
-  mutate(lang = str_trim(lang))
 
 shinyServer(function(input, output, session) {
   
+  the_sql <- reactive({
+    gsub("the_date", input$date, sql)
+  })
   
+  hashtags <- reactive({
+    dbGetQuery(con, the_sql(), stringsAsFactors = FALSE) %>%
+      as_tibble() %>%
+      mutate(lang = str_trim(lang))
+  })
    
-    the_data <- reactive({
-      hashtags %>%
+    the_data_full <- reactive({
+      hashtags() %>%
         filter(lang %in% input$langs) %>%
         group_by(hashtag) %>%
         summarise(freq = sum(freq)) %>%
-        arrange(desc(freq)) %>%
-        slice(1:40)
+        arrange(desc(freq))
     })  
+    
+    the_data <- reactive({
+      the_data_full() %>%
+        slice(1:80)
+    })
     
     
     output$wcp <- renderImage({
@@ -60,11 +70,12 @@ shinyServer(function(input, output, session) {
       png(outfile, width = width * pixelratio, height = height * pixelratio,
           res = res * pixelratio)
       par(mai=c(0,0,0,0), bg = "grey50", family = "FreeSans")
+      n <- nrow(the_data())
       wordcloud(the_data()$hashtag,
                 the_data()$freq,
                 random.order = FALSE,
                 ordered.colors = TRUE,
-                colors = inferno(40, direction = -1))
+                colors = inferno(n, direction = -1))
       dev.off()
       
       # Return a list containing the filename
@@ -75,7 +86,9 @@ shinyServer(function(input, output, session) {
     }, deleteFile = TRUE)
     
       
-    
-  
+    output$hashn <- renderText(paste0("A sample of ", 
+                                      sum(as.numeric(the_data_full()$freq)),
+                                      " hashtags."))
+   output$hashes <- renderDataTable(the_data(), options = list(dom = 't'))
   
 })

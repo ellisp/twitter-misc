@@ -41,4 +41,4 @@ save(top_ten_lang, file = "twitter-cloud/top_ten_lang.rda")
 # in a terminal:
 # sudo cp -R twitter-cloud /srv/shiny-server/
 
-http://52.64.126.221/shiny/twitter-cloud/
+# http://52.64.126.221/shiny/twitter-cloud/
