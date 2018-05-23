@@ -3,8 +3,6 @@ library(RPostgres)
 
 con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
-?sprintf
-
 tags <- c("rstats", "nzpol", "green" ,"wishyouwerehere", "Government", "Budget2018", "climatechange")
 res <- list()
 
@@ -92,4 +90,31 @@ ggplot(data, aes(x = batch_id, y = tweets_per_sec)) +
   geom_line()
 
 
+
+# top 10 arabic hashtags
+sql <-"
+SELECT 
+  hashtag,
+  COUNT(a.status_id) AS freq,
+  lang
+FROM
+  tweets.hashtags AS a
+JOIN
+  tweets.tweets AS b
+ON a.status_id = b.status_id
+WHERE lang = 'ar'
+GROUP BY lang, hashtag
+ORDER BY freq DESC
+LIMIT 10"
+
+arabic <- dbGetQuery(con, sql)
+plot(1:10, 1:10, type = "n")
+text(1:10, 1:10, arabic$hashtag)
+
 dbDisconnect(con)
+
+arabic <-" السعودية"
+arabic
+png("arabic.png", 500, 500, res = 72)
+plot(1, 1, type ="n"); text(1,1, arabic)
+dev.off()
