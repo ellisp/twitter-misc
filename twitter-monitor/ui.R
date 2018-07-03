@@ -29,8 +29,17 @@ shinyUI(fluidPage(
     
     # Show a plot of the generated distribution
     mainPanel(
-       plotOutput("wcp", height = "600px"),
-       textOutput("hashn")
+      tabsetPanel(
+        tabPanel("Hashtags",
+           plotOutput("wcp", height = "600px"),
+           textOutput("hashn")
+        ),
+        tabPanel("Tweeters",
+            plotOutput("tweeters")   
+                 
+                 )
+      )
+    )
     )
   )
-))
+)

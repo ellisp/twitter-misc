@@ -11,7 +11,7 @@ for(i in 1:length(tags)){
   res[i] <- dbGetQuery(con, sql)
 }
 
-data.frame(tags, count = unlist(res  ))
+data.frame(tags, count = round(unlist(res  )))
 
 # Top 10 hashtags by language
 sql <-"
@@ -107,14 +107,65 @@ GROUP BY lang, hashtag
 ORDER BY freq DESC
 LIMIT 10"
 
-arabic <- dbGetQuery(con, sql)
-plot(1:10, 1:10, type = "n")
-text(1:10, 1:10, arabic$hashtag)
+
+
+# Top 10 tweeters
+sql <-"
+SELECT 
+  b.screen_name,
+  COUNT(a.status_id) AS freq
+FROM
+  tweets.tweets AS a
+INNER JOIN
+  tweets.users AS b
+ON a.user_id = b.user_id
+GROUP BY b.screen_name
+ORDER BY freq DESC
+LIMIT 10"
+dbGetQuery(con, sql)
+
+
+
+# mentions by day
+sql <-"
+SELECT 
+  b.screen_name,
+  COUNT(a.status_id) AS freq,
+  date_trunc('day', c.created_at) AS day
+FROM
+  tweets.mentions AS a
+INNER JOIN
+  tweets.users AS b
+ON a.mentioned_user_id = b.user_id
+INNER JOIN
+  tweets.tweets AS c
+ON c.status_id = a.status_id
+GROUP BY b.screen_name, date_trunc('day', c.created_at) 
+HAVING COUNT(a.status_id)  > 1
+ORDER BY freq DESC
+"
+mentions <- dbGetQuery(con, sql)
+head(mentions)
+length(unique(mentions$screen_name))
+
+library(forcats)
+mentions %>%
+  filter(day != max(day)) %>%
+  mutate(freq = as.numeric(freq),
+         screen_name = fct_reorder(screen_name, -freq),
+         screen_name = fct_other(screen_name, keep = levels(screen_name)[1:10] )) %>%
+  group_by(screen_name, day) %>%
+  summarise(freq = sum(freq)) %>%
+  ungroup() %>%
+  mutate(screen_name = fct_reorder(screen_name, -freq)) %>%
+  ggplot(aes(x = day, y = freq, colour = screen_name)) +
+  geom_line() +
+    geom_point() +
+  scale_y_log10() 
+
+# push those calculations up into the database, and convert them to percentages
+# of total mentions
+  
+dbGetQuery(con, "select * from tweets.batches order by batch_id")    %>% View
 
 dbDisconnect(con)
-
-arabic <-" السعودية"
-arabic
-png("arabic.png", 500, 500, res = 72)
-plot(1, 1, type ="n"); text(1,1, arabic)
-dev.off()
