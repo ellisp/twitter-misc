@@ -19,17 +19,19 @@ shinyUI(fluidPage(
                 max = Sys.Date()
       ),
       
-      radioButtons(
-        "langs",
-        "Choose a language",
-        choices = top_ten_lang,
-        selected = "en"),
-      dataTableOutput("hashes")
+      conditionalPanel("input.tabs == 'Hashtags'",
+        radioButtons(
+          "langs",
+          "Choose a language",
+          choices = top_ten_lang,
+          selected = "en"),
+        dataTableOutput("hashes")
+      )
     ),
     
     # Show a plot of the generated distribution
     mainPanel(
-      tabsetPanel(
+      tabsetPanel(id = "tabs",
         tabPanel("Hashtags",
            plotOutput("wcp", height = "600px"),
            textOutput("hashn")
