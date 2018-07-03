@@ -12,9 +12,10 @@ shinyUI(fluidPage(
    
   sidebarLayout(
     sidebarPanel(
-      dateInput('date',
-                label = 'Choose a day after 17 May 2018:',
-                value = Sys.Date() - 1,
+      dateRangeInput('date',
+                label = 'Choose a date range:',
+                start = Sys.Date() - 2,
+                end = Sys.Date() - 1,
                 min = "2018-05-17",
                 max = Sys.Date()
       ),

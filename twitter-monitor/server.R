@@ -19,7 +19,8 @@ SELECT
   freq,
   (SELECT COUNT(1) 
      FROM tweets.tweets 
-     WHERE date_trunc('day', created_at) = 'the_date') / 
+     WHERE date_trunc('day', created_at) >= 'the_date_1' AND
+       date_trunc('day', created_at) <= 'the_date_2') / 
    CAST(freq AS DECIMAL) AS inv_prop
 FROM
 (SELECT
@@ -29,7 +30,8 @@ FROM
   tweets.tweets AS a
  LEFT JOIN tweets.users AS b
  ON a.user_id = b.user_id
- WHERE date_trunc('day', a.created_at) = 'the_date'
+ WHERE date_trunc('day', a.created_at) >= 'the_date_1' AND
+   date_trunc('day', a.created_at) <= 'the_date_2'
  GROUP BY b.screen_name
  HAVING count(1) > 1) AS q
 ORDER BY freq desc
@@ -46,7 +48,8 @@ FROM
 JOIN
   tweets.tweets AS b
 ON a.status_id = b.status_id
-WHERE date_trunc('day', b.created_at) = 'the_date'
+ WHERE date_trunc('day', b.created_at) >= 'the_date_1' AND
+   date_trunc('day', b.created_at) <= 'the_date_2'
 GROUP BY lang, hashtag
 ORDER BY freq DESC"
 
@@ -54,11 +57,16 @@ ORDER BY freq DESC"
 shinyServer(function(input, output, session) {
   
   the_hash_sql <- reactive({
-    gsub("the_date", input$date, hash_sql)
+    tmp <- gsub("the_date_1", input$date[1], hash_sql)
+    tmp <- gsub("the_date_2", input$date[2], tmp)
+    return(tmp)
   })
   
   the_tweeters_sql <- reactive({
-    gsub("the_date", input$date, tweeters_sql)
+    tmp <- gsub("the_date_1", input$date[1], tweeters_sql)
+    tmp <- gsub("the_date_2", input$date[2], tmp)
+    return(tmp)
+    
   })
   
   hashtags <- reactive({
@@ -91,7 +99,7 @@ shinyServer(function(input, output, session) {
         mutate(freq = as.numeric(freq),
                screen_name = fct_reorder(screen_name, freq)) %>%
         ggplot(aes(y = screen_name, x = freq, label = round(inv_prop, -1))) +
-        geom_text() +
+        geom_text(colour = "yellow", family = "FreeSans") +
         labs(x = "Count in sample", y = "") +
         ggtitle(paste("Prolific tweeters on", input$date),
                 "Numbers on graphic show what proportion (eg 1 in 10,000) of all tweets are from this person ")
