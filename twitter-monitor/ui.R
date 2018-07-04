@@ -34,13 +34,15 @@ shinyUI(fluidPage(
     mainPanel(
       tabsetPanel(id = "tabs",
         tabPanel("Hashtags",
-           plotOutput("wcp", height = "600px"),
+           imageOutput("wcp", height = "600px"),
            textOutput("hashn")
         ),
         tabPanel("Tweeters",
-            plotOutput("tweeters")   
-                 
-                 )
+            imageOutput("tweeters")   
+                 ),
+        tabPanel("Sampling",
+            imageOutput("batches")
+            )
       )
     )
     )
