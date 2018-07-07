@@ -8,6 +8,8 @@ library(RPostgres)
 library(viridis)
 library(stringr)
 library(forcats)
+library(ggseas)
+library(tools)
 
 theme_set(theme_dark(base_family = "FreeSans"))
 
@@ -20,6 +22,7 @@ con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 tweeters_sql <- paste(readLines("sql/tweeters.sql"), collapse = "\n")
 hash_sql <- paste(readLines("sql/hash.sql"), collapse = "\n")
 batches_sql <- paste(readLines("sql/batches.sql"), collapse = "\n")
+retweets_sql <- paste(readLines("sql/popular_text.sql"), collapse = "\n")
 
 shinyServer(function(input, output, session) {
   
@@ -42,6 +45,12 @@ shinyServer(function(input, output, session) {
     return(tmp)
   })
   
+  the_retweets_sql <- reactive({
+    tmp <- gsub("the_date_1", input$date[1], retweets_sql)
+    tmp <- gsub("the_date_2", input$date[2], tmp)
+    return(tmp)
+  })
+  
   #-----------------download data----------------
   tweeters <- reactive({
     dbGetQuery(con, the_tweeters_sql(), stringsAsFactors = FALSE) %>%
@@ -53,12 +62,21 @@ shinyServer(function(input, output, session) {
       as_tibble() 
   })
   
+  
   hashtags <- reactive({
     dbGetQuery(con, the_hash_sql(), stringsAsFactors = FALSE) %>%
       as_tibble() %>%
       mutate(lang = str_trim(lang))
   })
   
+  retweets <- reactive({
+    dbGetQuery(con, the_retweets_sql(), stringsAsFactors = FALSE) %>%
+      as_tibble() %>%
+      mutate(lang = str_trim(lang))
+  })
+  
+  
+  #------------more data processing-------------
   hash_data_full <- reactive({
       hashtags() %>%
         filter(lang %in% input$langs) %>%
@@ -72,6 +90,15 @@ shinyServer(function(input, output, session) {
       slice(1:80)
   })
   
+  retweets_data <- reactive({
+    tmp <- retweets() %>%
+      filter(lang %in% input$langs) %>%
+      select(-lang, -rank) %>%
+      arrange(desc(observed_retweets))
+    names(tmp) <- toTitleCase(gsub("_", " ", names(tmp)))
+    return(tmp)
+  })
+  
   #----------------define graphics------------------
   tweeters_plot <- reactive({
     p <- tweeters() %>%
@@ -81,7 +108,8 @@ shinyServer(function(input, output, session) {
       ggplot(aes(y = screen_name, x = freq, label = round(inv_prop, -1))) +
       geom_text(colour = "yellow", family = "FreeSans") +
       labs(x = "Count in sample", y = "") +
-      ggtitle(paste("Prolific tweeters on", input$date),
+      ggtitle(paste("Prolific tweeters from", input$date[1], 
+                    "to", input$date[2]),
               "Numbers on graphic show what proportion (eg 1 in 10,000) of all tweets are from this person ")
     return(p)
   })
@@ -186,5 +214,5 @@ shinyServer(function(input, output, session) {
                                     " hashtags."))
   output$hashes <- renderDataTable(hash_data(), options = list(dom = 't'))
   
-   
+  output$retweets <- renderDataTable(retweets_data(), options = list(dom = 't')) 
 })

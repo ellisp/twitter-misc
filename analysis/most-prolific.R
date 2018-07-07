@@ -3,6 +3,7 @@ library(RPostgres)
 
 con <- dbConnect(RPostgres::Postgres(), dbname = "twitter")
 
+
 sql <- "
 SELECT
   screen_name, 

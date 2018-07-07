@@ -9,7 +9,8 @@ shinyUI(fluidPage(
 @import url('https://fonts.googleapis.com/css?family=Prosto One');
   ")),
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "my_styles.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "my_styles.css"),
+    tags$link(rel = "canonical", href="http://shiny.ellisco.com.au/twitter-monitor/")
   ),
   
   # Application title
@@ -26,7 +27,7 @@ shinyUI(fluidPage(
                 max = Sys.Date()
       ),
       
-      conditionalPanel("input.tabs == 'Hashtags'",
+      conditionalPanel("input.tabs == 'Hashtags' | input.tabs == 'Popular retweets'",
         radioButtons(
           "langs",
           "Choose a language",
@@ -43,6 +44,9 @@ shinyUI(fluidPage(
            imageOutput("wcp", height = "600px"),
            textOutput("hashn")
         ),
+        tabPanel("Popular retweets",
+            dataTableOutput("retweets")
+            ),
         tabPanel("Tweeters",
             imageOutput("tweeters")   
                  ),
@@ -53,7 +57,14 @@ shinyUI(fluidPage(
               For example, around 1,000 to 3,000 tweets are loaded in each 
               burst.  Sampling bursts take place once an hour at a random
               time."),
-            p("The number of tweets show both daily and weekly periodicity;
+            p("The actual sampling rate is unknown because it depends on the 
+              proportion of tweets provided in Twitter's streaming API which 
+              varies over time.
+              Studies have estimated this to be between 1% and 40% of all
+              actual tweets.  The database behind this app then has a sample of
+              1/120th of those; so the sample here probably ranges between one
+              in 12,000 and 1 in 300."),
+            p("The number of tweets in the sample show both daily and weekly periodicity;
               peak time is around 15:30 UTC each day.")
             )
       )
