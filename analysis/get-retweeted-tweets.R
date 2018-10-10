@@ -42,3 +42,7 @@ head(x)
 dbGetQuery(con, "select text from tweets.tweets where status_id = '1010180196140322818'")
 
 1    274
+
+
+sql <- "select count(1) from tweets.tweets where text = 'If the Cleveland Cavaliers win the 2018 NBA finals I’ll buy everyone who retweet’s this a jersey...'"
+dbGetQuery(con, sql)

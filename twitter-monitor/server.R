@@ -94,7 +94,8 @@ shinyServer(function(input, output, session) {
     tmp <- retweets() %>%
       filter(lang %in% input$langs) %>%
       select(-lang, -rank) %>%
-      arrange(desc(observed_retweets))
+      arrange(desc(observed_retweets)) %>%
+      mutate(text = gsub("&amp;", "&", text, fixed = TRUE))
     names(tmp) <- toTitleCase(gsub("_", " ", names(tmp)))
     return(tmp)
   })
